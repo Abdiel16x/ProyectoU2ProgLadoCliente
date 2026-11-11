@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <title>Gestor de canciones</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            color: #000000;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .contenedor {
+            max-width: 700px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1C053A;
+        }
+
+        h2 {
+            color: #311557;
+        }
+
+        .formulario,
+        .playlist {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            border: 1px solid #8F78AD;
+            box-shadow: 0 4px 10px rgba(28, 5, 58, 0.15);
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #8F78AD;
+            border-radius: 6px;
+            background: #ffffff;
+            color: #000000;
+        }
+
+        button {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 3px;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .agregar,
+        .mezclar {
+            background: #311557;
+            color: #ffffff;
+            display: block;
+            margin: 10px auto;
+        }
+
+        .error {
+            color: #ff0000;
+            font-size: 13px;
+            margin: 3px 0;
+        }
+
+        .cancion {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: #ffffff;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #8F78AD;
+            box-shadow: 0 2px 6px rgba(28, 5, 58, 0.12);
+            flex-wrap: wrap;
+        }
+
+        .nombre {
+            flex: 1;
+        }
+
+        .eliminar {
+            background: #ff0000;
+            color: #ffffff;
+        }
+
+        .mover {
+            background: #6B4E90;
+            color: #ffffff;
+        }
+
+        #mensaje {
+            text-align: center;
+            color: #6B4E90;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="contenedor">
+
+        <h1>Generador de playlist</h1>
+
+        <div class="formulario">
+            <h2>Agregar canción</h2>
+
+            <div id="formulario">
+                <input type="text" id="nombre">
+                <p id="errorNombre" class="error"></p>
+
+                <input type="text" id="artista">
+                <p id="errorArtista" class="error"></p>
+
+                <button type="button" id="btnAgregar" class="agregar">Agregar a la Playlist</button>
+            </div>
+        </div>
+
+        <div class="playlist">
+            <h2>Mis canciones</h2>
+            <input type="text" id="buscador">
+            <button id="btnMezclar" class="mezclar">Mezclar playlist</button>
+            <div id="lista"></div>
+            <p id="mensaje"></p>
+        </div>
+
+    </div>
+
+    <script>
+        let playlist = [];
+        const nombreCancion = document.getElementById("nombre");
+        const artista = document.getElementById("artista");
+        const errorNombre = document.getElementById("errorNombre");
+        const errorArtista = document.getElementById("errorArtista");
+        const btnAgregar = document.getElementById("btnAgregar");
+        const buscador = document.getElementById("buscador");
+        const btnMezclar = document.getElementById("btnMezclar");
+        const lista = document.getElementById("lista");
+        const mensaje = document.getElementById("mensaje");
+
+        if (localStorage.getItem("playlist") !== null) {
+            playlist = JSON.parse(localStorage.getItem("playlist"));
+        }
+
+        btnAgregar.addEventListener("click", function () {
+            let nombre = nombreCancion.value;
+            let artistaCancion = artista.value;
+            errorNombre.textContent = "";
+            errorArtista.textContent = "";
+
+            if (nombre === "") {
+                errorNombre.textContent = "Debes escribir el nombre de la canción";
+            }
+
+            if (artistaCancion === "") {
+                errorArtista.textContent = "Debes escribir el artista de la canción";
+            }
+
+            else {
+                let nuevaCancion = {
+                    nombre: nombre,
+                    artista: artistaCancion
+                };
+
+                let p = playlist.length;
+                playlist[p] = nuevaCancion;
+
+                guardarPlaylist();
+                mostrarPlaylist();
+
+                nombreCancion.value = "";
+                artista.value = "";
+            }
+        });
+
+        buscador.addEventListener("input", function () {
+            mostrarPlaylist();
+        });
+
+        btnMezclar.addEventListener("click", function () {
+            for (let p = playlist.length - 1; p > 0; p--) {
+                let posicion = Math.floor(Math.random() * (p + 1));
+
+                let temporal = playlist[p];
+                playlist[p] = playlist[posicion];
+                playlist[posicion] = temporal;
+            }
+
+            guardarPlaylist();
+            mostrarPlaylist();
+        });
+
+        function guardarPlaylist() {
+            localStorage.setItem("playlist", JSON.stringify(playlist));
+        }
+
+        function mostrarPlaylist() {
+            lista.innerHTML = "";
+            let busqueda = buscador.value.toLowerCase();
+            let cantidad = 0;
+
+            for (let i = 0; i < playlist.length; i++) {
+                let nombre = playlist[i].nombre.toLowerCase();
+                let artista = playlist[i].artista.toLowerCase();
+
+                if (nombre.includes(busqueda) || artista.includes(busqueda)) {
+                    cantidad++;
+
+                    let tarjeta = document.createElement("div");
+                    let texto = document.createElement("span");
+                    let btnSubir = document.createElement("button");
+                    let btnBajar = document.createElement("button");
+                    let btnEliminar = document.createElement("button");
+
+                    tarjeta.classList.add("cancion");
+                    texto.classList.add("nombre");
+
+                    texto.textContent = playlist[i].nombre + " - " + playlist[i].artista;
+
+                    btnSubir.textContent = "↑";
+                    btnBajar.textContent = "↓";
+                    btnEliminar.textContent = "Eliminar";
+
+                    btnSubir.classList.add("mover");
+                    btnBajar.classList.add("mover");
+                    btnEliminar.classList.add("eliminar");
+
+                    btnSubir.disabled = i === 0;
+                    btnBajar.disabled = i === playlist.length - 1;
+
+                    tarjeta.append(texto);
+                    tarjeta.append(btnSubir);
+                    tarjeta.append(btnBajar);
+                    tarjeta.append(btnEliminar);
+
+                    lista.append(tarjeta);
+
+                    btnSubir.addEventListener("click", function () {
+                        moverCancion(i, i - 1);
+                    });
+
+                    btnBajar.addEventListener("click", function () {
+                        moverCancion(i, i + 1);
+                    });
+
+                    btnEliminar.addEventListener("click", function () {
+                        playlist.splice(i, 1);
+
+                        guardarPlaylist();
+                        mostrarPlaylist();
+                    });
+                }
+            }
+
+            if (cantidad === 0) {
+                mensaje.textContent = "No hay canciones para mostrar";
+            }
+            else {
+                mensaje.textContent = "";
+            }
+        }
+
+        function moverCancion(pos1, pos2) {
+            let mover = playlist[pos1];
+
+            playlist[pos1] = playlist[pos2];
+            playlist[pos2] = mover;
+
+            guardarPlaylist();
+            mostrarPlaylist();
+        }
+
+        mostrarPlaylist();
+    </script>
+
+</body>
+</html>
